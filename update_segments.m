@@ -1,8 +1,9 @@
-
+% v1.1
 function data=update_segments(initials,data)
 
 
 raw=cell2mat(data.trial);
+
 raw2=raw;       % apply ica weights to this
 srate=data.fsample;
 chanlist = find(~isnan(raw(:,1)));
@@ -20,7 +21,7 @@ zscore=zeros(length(chanlist),size(raw,2));
 
 l = size(raw,2);
 z_th = initials(1);                                   % z score threshold, /5                                                                                                       5
-k_th = initials(2);                                   % kurtosis threhsold. NO CURTOSIS ATM
+%k_th = initials(2);                                   % kurtosis threhsold. NO CURTOSIS ATM
 z_res = initials(3);                                  % separating resolution between articial segments (large value blends neighbouring artefacts to one) / 750
 bufferlen = 0.3*srate;                                % length of buffer zones used in interpolation
 ratio_for_global_bad = initials(5);                   % ratio when artefact is accepted to be removed                                                      /25
@@ -70,34 +71,36 @@ end
 
 
 z_ind=abs(zscore)>z_th;     %Over thershold logical
-kurt = zeros(length(chanlist),size(s,2));        % Kurtosis calculations
 
 
-kurt_stored = zeros(length(chanlist),200);
-wins = [180:1:220];n_win = rem(length(s),wins);n_win=find(n_win==0);n_win=wins(n_win(end));     % Number of windows to kurtosis calculation
-winlen = length(s)/n_win;
-for n = 1:length(chanlist)
-    s = raw(chanlist(n),:);
-    for i = 1:200
-        if i == 1;
-            from = 1;
-            to = i*winlen;
-        else
-            from = (i-1)*winlen+1;
-            to = i*winlen;
-        end
-        ikkuna = s(from:to);
-        kurti = sum(((ikkuna-mean(ikkuna)).^4)/(length(ikkuna)*(std(ikkuna))^4));
-        kurt_stored(n,i) = kurti;
-        if kurti > k_th;     
-           kurt(n,from:to) = linspace(1,1,winlen);
-        else
-           kurt(n,from:to) = zeros(1,winlen);
-        end
-    end
-end
+% kurt = zeros(length(chanlist),size(s,2));        % Kurtosis calculations
+% 
+% 
+% kurt_stored = zeros(length(chanlist),200);
+% wins = [180:1:220];n_win = rem(length(s),wins);n_win=find(n_win==0);n_win=wins(n_win(end));     % Number of windows to kurtosis calculation
+% winlen = length(s)/n_win;
+% for n = 1:length(chanlist)
+%     s = raw(chanlist(n),:);
+%     for i = 1:200
+%         if i == 1;
+%             from = 1;
+%             to = i*winlen;
+%         else
+%             from = (i-1)*winlen+1;
+%             to = i*winlen;
+%         end
+%         ikkuna = s(from:to);
+%         kurti = sum(((ikkuna-mean(ikkuna)).^4)/(length(ikkuna)*(std(ikkuna))^4));
+%         kurt_stored(n,i) = kurti;
+%         if kurti > k_th;     
+%            kurt(n,from:to) = linspace(1,1,winlen);
+%         else
+%            kurt(n,from:to) = zeros(1,winlen);
+%         end
+%     end
+% end
 
-artificial = kurt + z_ind ; % logical matrix
+artificial = z_ind ; % logical matrix
 
 artificial2=zeros(1,size(raw,2));
 for n = 1 : length(raw)
@@ -234,21 +237,19 @@ zscore=zeros(size(raw,1),size(raw,2));zscore(chanlist,:)=zscore_dump;
 
 %%
 fig1=figure;
-subplot(3,6,1:3);plot(abs(zscore(1,:)),'Color','k');hold on;plot([1 length(zscore)],[z_th z_th],'--','Color','r','LineWidth',2);hold on;title('Sliding zscore');ylim([0 50])
-subplot(3,6,4:6);scatter(reshape(kurt_stored,[1,length(chanlist)*200]),reshape(x_space,[1,(length(chanlist))*200]),'filled');title('Kurtosis');hold on;plot([k_th k_th],[0 length(chanlist)],'--','Color','r','LineWidth',2);ylabel('Channel')
-ylim([0 257])
+subplot(3,6,1:6);plot(abs(zscore(1,:)),'Color','k');hold on;plot([1 length(zscore)],[z_th z_th],'--','Color','r','LineWidth',2);hold on;title('Sliding zscore');ylim([0 50])
+%subplot(3,6,4:6);scatter(reshape(kurt_stored,[1,length(chanlist)*200]),reshape(x_space,[1,(length(chanlist))*200]),'filled');title('Kurtosis');hold on;plot([k_th k_th],[0 length(chanlist)],'--','Color','r','LineWidth',2);ylabel('Channel')
+%ylim([0 257])
 
 subplot(3,6,7:12);plot(raw(1,:),'Color','k');hold on;
 for i = 1:size(s_e_array,1)
     plot([s_e_array(i,1):1:s_e_array(i,2)],raw(1,s_e_array(i,1):s_e_array(i,2)),'Color','r');hold on;
 end
 lims=get(gca);lims=lims.YLim;
-
 subplot(3,6,13:18);plot(cut_raw(1,:),'Color','k');ylim(lims)
 
 scroll1 = uicontrol('Style','slider','Parent',fig1,'Units','normalized','Position',[0.15 0.02 0.7 0.025],'Value',1,'Min',1,'Max',size(raw,1),'SliderStep', [1/255 1/255]);
 set(scroll1,'Callback',@scroll_prepare_ICA);
-
 % WAIT FOR FIG 1 CLOSING
 disp('CLOSE FIGURE TO CONTINUE')
 waitfor(fig1)
@@ -259,7 +260,7 @@ function scroll_prepare_ICA(hObject,eventdata)
     allAxesInFigure = findall(fig1,'type','axes');
     cla(allAxesInFigure(1))
     cla(allAxesInFigure(2))
-    cla(allAxesInFigure(4))
+    cla(allAxesInFigure(3))
 
     slider_value = round(get(hObject,'Value'));
     disp(slider_value)
@@ -271,9 +272,7 @@ function scroll_prepare_ICA(hObject,eventdata)
     % zscore = evalin('base','zscore');
     % z_th = evalin('base','z_th');
 
-
-    subplot(3,6,1:3);plot(abs(zscore(k,:)),'Color','k');hold on;plot([1 length(zscore)],[z_th z_th],'--','Color','r','LineWidth',2);hold on;title('Sliding zscore');ylim([0 50])
-
+    subplot(3,6,1:6);plot(abs(zscore(k,:)),'Color','k');hold on;plot([1 length(zscore)],[z_th z_th],'--','Color','r','LineWidth',2);hold on;title('Sliding zscore');ylim([0 50])
     subplot(3,6,7:12);plot(raw(k,:),'Color','k');hold on;
     for i = 1:size(s_e_array,1)
         plot([s_e_array(i,1):1:s_e_array(i,2)],raw(k,s_e_array(i,1):s_e_array(i,2)),'Color','r');hold on;
@@ -285,9 +284,11 @@ function scroll_prepare_ICA(hObject,eventdata)
 end
 
 
+
 data.preprocessing.badsegs=s_e_array;
 data.preprocessing.shortsig=cut_raw;
-assignin('base','data',data)
+assignin('base','datao',data)
+
 
 end
 
