@@ -1,4 +1,4 @@
-
+% v1.1
 function data = gap_inpaint(data)
 
     interpolated_data = data.trial{1};
@@ -57,7 +57,6 @@ function data = gap_inpaint(data)
 
 
             method = 'pchip';
-
             %debug
             j = find(isnan(sample_values));
             j2 = find(isnan(sample_window));
@@ -136,14 +135,14 @@ function data = gap_inpaint(data)
     fig1=figure;
     subplot(2,2,1);pspectrum(raw3(1,:),srate,'spectrogram');caxis([-2 15]); colormap('jet');
     subplot(2,2,2);pspectrum(corrected_raw(1,:),srate,'spectrogram');caxis([-2 15]); colormap('jet');
-    subplot(2,2,3:4);plot(raw3(1,:),'Color','k');ylim([-500 500]);hold on;plot(corrected_raw(1,:),'Color','r');ylim([-500 500])
+    subplot(2,2,3:4);plot(raw3(1,:),'Color','k');ylim([-1000 1000]);hold on;plot(corrected_raw(1,:),'Color','r');ylim([-500 500])
     title('Channel 1/256 (black = original, red = corrected)')
     scroll1 = uicontrol('Style','slider','Parent',fig1,'Units','normalized','Position',[0.15 0.02 0.7 0.025],'Value',1,'Min',1,'Max',size(corrected_raw,1),'SliderStep', [1/255 1/255]);
     set(scroll1,'Callback',@scroll_clean_data2);
     waitfor(fig1)
     
     
-    data.ica_pruned=corrected_raw;
+    data.despiked=corrected_raw;
     
     function scroll_clean_data2(hObject,eventdata)
 
@@ -158,7 +157,8 @@ function data = gap_inpaint(data)
 
     subplot(2,2,1);pspectrum(raw3(k,:),srate,'spectrogram');caxis([-2 15]); colormap('jet')
     subplot(2,2,2);pspectrum(corrected_raw(k,:),srate,'spectrogram');caxis([-2 15]); colormap('jet');
-    subplot(2,2,3:4);plot(raw3(k,:)-mean(raw3(k,:)),'Color','k');ylim([-500 500]);hold on;plot(corrected_raw(k,:)-mean(corrected_raw(k,:)),'Color','r');ylim([-500 500])
+    subplot(2,2,3:4);plot(detrend(raw3(k,:),1),'Color','k');ylim([-10000 1000]);hold on;
+    plot(detrend(corrected_raw(k,:),1),'Color','r');ylim([-1000 1000])
     title(sprintf('Channel %i/%i (black = original, red = corrected)',k,size(corrected_raw,1)))
 
     end
